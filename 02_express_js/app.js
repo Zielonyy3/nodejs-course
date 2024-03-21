@@ -7,7 +7,7 @@ app.engine('hbs', expressHbs({
     defaultLayout: 'main-layout',
     extname: 'hbs'
 }));
-app.set('view engine', 'hbs');
+app.set('view engine', 'ejs');
 
 const adminRoutes = require('./routes/admin').routes;
 const shopRoutes = require('./routes/shop');
