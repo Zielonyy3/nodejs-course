@@ -1,0 +1,16 @@
+[
+  {
+    "title": "Book",
+    "imageUrl": "https://picsum.photos/200/200",
+    "description": "Very good book about stories",
+    "price": "99.99",
+    "id": "0.4273868127509062"
+  },
+  {
+    "title": "TV",
+    "imageUrl": "https://picsum.photos/200/180",
+    "description": "Very good TV",
+    "price": "1199.99",
+    "id": "0.3425342432423"
+  }
+]
