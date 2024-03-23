@@ -4,8 +4,11 @@ const app = express();
 
 app.set('view engine', 'ejs');
 
+const db = require('./util/database');
+
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
+
 const path = require("path");
 const errorsController = require('./controllers/errors-controller');
 

@@ -1,18 +1,5 @@
-const path = require("path");
-const rootDir = require('../util/path');
-const fs = require("fs");
 const Cart = require("./cart");
-
-const dataPath = path.join(rootDir, 'data', 'products.json');
-
-const getProducts = (callback) => {
-    fs.readFile(dataPath, (err, fileContent) => {
-        if (err) {
-            return callback([]);
-        }
-        callback(JSON.parse(fileContent));
-    })
-}
+const db = require('../util/database');
 
 module.exports = class Product {
     constructor({id = null, title, imageUrl, description, price}) {
@@ -24,47 +11,21 @@ module.exports = class Product {
     }
 
     save() {
-        getProducts(products => {
-            if (this.id) {
-                const existingProductIndex = products.findIndex(prod => prod.id === this.id);
-                products[existingProductIndex] = this;
-            } else {
-                this.id = Math.random().toString();
-                products.push(this);
-            }
-
-            fs.writeFile(dataPath, JSON.stringify(products), err => {
-                console.warn(err);
-            })
-        })
-
+        return db.execute(`INSERT INTO products (title, imageUrl, description, price)
+                           VALUES (?, ?, ?, ?)`,
+            [this.title, this.imageUrl, this.description, this.price]
+        );
     }
 
     static deleteById(id, callback) {
-        getProducts(products => {
-            const product = products.find(product => product.id === id);
-            const updatedProducts = products.filter(prod => prod.id !== id);
 
-            const updateCartCallback = () => {
-                Cart.deleteProduct(id, product.price, callback)
-            }
-
-            if(!updatedProducts.length) {
-                fs.unlink(dataPath, updateCartCallback)
-            }else {
-                fs.writeFile(dataPath, JSON.stringify(updatedProducts), updateCartCallback)
-            }
-        })
     }
 
-    static find(id, callback) {
-        getProducts(products => {
-            const foundProduct = products.find(product => product.id === id);
-            callback(foundProduct);
-        })
+    static find(id) {
+        return db.execute('SELECT * FROM products where id = ? LIMIT 1', [id]);
     }
 
-    static fetchAll(callback) {
-        getProducts(callback);
+    static fetchAll() {
+        return db.execute('SELECT * FROM products');
     }
 }
