@@ -1,19 +1,26 @@
 const path = require("path");
 const rootDir = require("../util/path");
 const fs = require("fs");
+const {quiet} = require("nodemon/lib/utils");
 const dataPath = path.join(rootDir, 'data', 'cart.json');
 
-module.exports = class Cart {
-    static addProduct(id, productPrice, callback) {
-        fs.readFile(dataPath, (err, fileContent) => {
-            let cart = {
-                products: [],
-                totalPrice: 0,
-            };
-            if (!err) {
-                cart = JSON.parse(fileContent);
-            }
+const getCart = (callback) => {
+    fs.readFile(dataPath, (err, fileContent) => {
+        let cart = {
+            products: [],
+            totalPrice: 0,
+        };
+        if (!err) {
+            cart = JSON.parse(fileContent);
+        }
+        callback(cart);
+    });
+}
 
+module.exports = class Cart {
+
+    static addProduct(id, productPrice, callback) {
+        getCart(cart => {
             const existingProductIndex = cart.products.findIndex(product => product.id === id);
             const existingProduct = cart.products[existingProductIndex];
             let updatedProduct;
@@ -39,4 +46,31 @@ module.exports = class Cart {
         })
     }
 
+    static deleteProduct(id, productPrice, callback) {
+        getCart(cart => {
+            if (!cart.products.length) {
+                callback(cart);
+            }
+
+            const updatedCart = {...cart};
+            const productIndex = cart.products.findIndex(prod => prod.id === id);
+            if (productIndex >= 0) {
+                const product = cart.products[productIndex]
+
+                updatedCart.totalPrice -= productPrice * product.quantity;
+                updatedCart.products = cart.products.filter(prod => prod.id !== id);
+
+                fs.writeFile(dataPath, JSON.stringify(updatedCart), err => {
+                    console.warn(err);
+                    callback(cart);
+                })
+            } else {
+                callback(cart);
+            }
+        });
+    }
+
+    static getCart(callback) {
+        getCart(callback);
+    }
 }
