@@ -32,6 +32,7 @@ const path = require("path");
 const errorsController = require('./controllers/errors-controller');
 const {seedDatabase} = require("./util/seeders");
 
+
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(express.static(path.join(__dirname, 'public')));
 
