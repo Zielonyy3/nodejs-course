@@ -1,14 +1,12 @@
-const Sequelize = require('sequelize');
+const MongoModel = require('./MongoModel')
 
-const sequelize = require('../util/database');
+class Order extends MongoModel {
+    static collectionName = 'orders';
 
-const Order = sequelize.define('order', {
-    id: {
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
-        allowNull: false,
-        primaryKey: true,
+    constructor({items, id = null}) {
+        super(id)
+        this.items = items
     }
-});
+}
 
 module.exports = Order;

@@ -1,44 +1,95 @@
-const {getDb} = require('../util/database');
+const MongoModel = require("./MongoModel");
 const {ObjectId} = require("mongodb");
+const Product = require("./product");
+const {getDb} = require("../util/database");
 
-const collection = () => getDb().collection('users');
+class User extends MongoModel {
+    static collectionName = 'users';
 
-class User {
-    constructor({username, email, id = null}) {
+    constructor({username, email, cart, id = null}) {
+        super(id)
         this.username = username;
         this.email = email;
-        this._id = id ? new ObjectId(id): null;
+        this.cart = cart;
     }
 
-    async save() {
-        try {
-            let result;
-            if (this._id) {
-                result = await collection()
-                    .updateOne(
-                        {_id: this._id},
-                        {$set: this}
-                    );
-            } else {
-                result = await collection().insertOne(this);
-            }
-            console.log(result);
-        } catch (err) {
-            console.error(err);
+    async addToCart(product) {
+        const cartProductIndex = this.cart?.items.findIndex(cp => cp.productId.toString() === product._id.toString());
+
+        let newQuantity = 1;
+        const updatedCartItems = this.cart ? [...this.cart.items] : [];
+
+        if (cartProductIndex >= 0) {
+            newQuantity = this.cart.items[cartProductIndex].quantity + 1;
+            updatedCartItems[cartProductIndex].quantity = newQuantity;
+        } else {
+            updatedCartItems.push({
+                productId: product._id,
+                quantity: newQuantity,
+            });
+        }
+
+        const updatedCart = {
+            items: updatedCartItems,
+        }
+
+        return await this.getCollection()
+            .updateOne(
+                {_id: new ObjectId(this._id)},
+                {$set: {cart: updatedCart}}
+            )
+    }
+
+    async getCart() {
+        if (this.cart) {
+            const productIds = this.cart.items.map(cp => cp.productId);
+            const products = await getDb().collection('products').find({_id: {$in: productIds}}).toArray();
+            return products.map(p => {
+                const cartProduct = this.cart.items.find(i => i.productId.toString() === p._id.toString());
+                return {
+                    ...p,
+                    quantity: cartProduct.quantity
+                }
+            });
+        } else {
+            return [];
         }
     }
 
-    static async fetchAll() {
-        return await collection().find().toArray();
+    async removeFromCart(productId) {
+        const updatedCartItems = this.cart.items.filter(item => item.productId.toString() !== productId.toString());
+
+        return await this.getCollection()
+            .updateOne(
+                {_id: new ObjectId(this._id)},
+                {$set: {cart: {items: updatedCartItems}}}
+            )
     }
 
-    static async findById(prodId) {
-        return await collection().findOne({_id: new ObjectId(prodId)})
+    async addOrder() {
+        const products = await this.getCart();
+        const order = {
+            items: products,
+            user: {
+                _id: new ObjectId(this._id),
+                username: this.username,
+                email: this.email,
+            }
+        }
+        await getDb().collection('orders').insertOne(order);
+        this.cart = {items: []};
+
+        return await this.getCollection()
+            .updateOne(
+                {_id: new ObjectId(this._id)},
+                {$set: {cart: null}}
+            )
     }
 
-    static async deleteById(prodId) {
-        return await collection().deleteOne({_id: new ObjectId(prodId)})
+    getOrders() {
+        return getDb().collection('orders').find({'user._id': this._id}).toArray()
     }
+
 }
 
-module.exports = Product;
+module.exports = User;

@@ -64,19 +64,19 @@ exports.postEditProduct = async (req, res, next) => {
 }
 
 exports.postAddProduct = async (req, res, next) => {
-
     try {
+        console.log(req.user);
         const product = new Product({
             title: req.body.title,
             imageUrl: req.body.imageUrl,
             description: req.body.description,
             price: req.body.price,
+            userId: req.user._id,
         });
         const result = await product.save();
         res.redirect('/')
     } catch (e) {
         console.error(e)
-
     }
 }
 
